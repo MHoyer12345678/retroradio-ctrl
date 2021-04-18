@@ -1,0 +1,15 @@
+Source: retroradio-ctrl
+Section: embedded
+Priority: optional
+Maintainer: Marko Hoyer <mhoyer.oss-devel@freenet.de>
+Build-Depends: debhelper (>= 10), libglib2.0-dev-bin, libglib2.0-dev, libasound2-dev, libmpdclient-dev, cpp-app-utils-dev, libudev-dev
+Standards-Version: 4.1.2
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: https://anonscm.debian.org/git/collab-maint/retroradio-ctrl.git
+#Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/retroradio-ctrl.git
+
+Package: retroradio-ctrl
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglib2.0-0, libasound2, libmpdclient2, alsa-utils
+Description: Retro Radio Controller
+ This eecutable implements the main controller of the retroradio. 

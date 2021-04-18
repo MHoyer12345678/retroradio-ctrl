@@ -1,0 +1,10 @@
+[Unit]
+Description="Retroradio Controller"
+
+[Service]
+ExecStartPre=/usr/sbin/alsactl -E HOME=/run/alsa restore
+ExecStart=/usr/bin/retroradio-controller
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
