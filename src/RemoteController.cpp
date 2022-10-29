@@ -21,33 +21,6 @@
 #include <cpp-app-utils/Logger.h>
 #include "RetroradioController.h"
 
-#define _SCAN_CODE_NOT_SET	0x0
-
-// remote one
-#define CODE_STANDBY		0x801E
-#define CODE_UP				0x801A
-#define CODE_DOWN			0x8005
-#define CODE_LEFT			0x8001
-#define CODE_RIGHT			0x8003
-#define CODE_ENTER			0x8002
-#define CODE_EXIT			0x8004
-#define CODE_SETUP			0x8012
-#define CODE_ZOOM			0x800A
-#define CODE_ROTATE			0x801B
-#define CODE_SLIDE_SHOW		0x801F
-
-//remote two
-#define CODE2_STANDBY		0xC14485
-#define CODE2_VOLUP			0xC14445
-#define CODE2_VOLDOWN		0xC144C5
-#define CODE2_MUTE			0xC14475
-#define CODE2_MODE			0xC1444D
-#define CODE2_SELECT		0xC14465
-#define CODE2_NEXT			0xC14425
-#define CODE2_PREV			0xC144A5
-#define CODE2_PLAY			0xC1440D
-
-
 #define SOFT_REPEAT_DETECTOR_TIMEOUT_MS	250
 
 #define DEFERED_INIT_RETRY_CNT_MAX		10
@@ -58,8 +31,9 @@ using namespace CppAppUtils;
 #define RC_CONFIG_GROUP					"RemoteControl"
 #define DEFAULT_RC_INPUTDEV_NAME		"/dev/lirc0"
 #define CONFIG_TAG_RC_INPUT_DEV_NAME	"InputDevice"
+#define DEFAULT_RC_PROFILE_NAME			SMALL_NEC_REMOTE_PROFILE_ID
+#define CONFIG_TAG_RC_PROFILE_NAME		"RemoteProfile"
 #define RC_PROTOCOL_PATH_TEMPLATE		"/sys/dev/char/%d:%d/device/protocols"
-#define RC_PROTOCOL_NAME				"nec"
 
 namespace retroradio_controller {
 
@@ -69,19 +43,25 @@ RemoteController::RemoteController(IRemoteControllerListener* theListener,
 		pollFd(-1),
 		lircEventSrc(0),
 		inputDeviceName(NULL),
+		remoteProfileName(NULL),
 		retryCntr(0),
 		defereTimerId(0),
 		softwarRepeatDetectorDelayEnabled(false),
 		softwareRepeatDetectorTimerId(0),
 		lastScanCode(_SCAN_CODE_NOT_SET)
 {
+	this->remoteControllerProfiles=new RemoteControllerProfiles();
 	configuration->AddConfigurationModule(this);
 }
 
 RemoteController::~RemoteController()
 {
+	if (this->remoteProfileName!=NULL)
+		free(this->remoteProfileName);
 	if (this->inputDeviceName!=NULL)
 		free(this->inputDeviceName);
+
+	delete this->remoteControllerProfiles;
 }
 
 bool RemoteController::Init()
@@ -91,6 +71,9 @@ bool RemoteController::Init()
 	this->retryCntr=0;
 	this->softwarRepeatDetectorDelayEnabled=false;
 	this->softwareRepeatDetectorTimerId=0;
+
+	if (!this->remoteControllerProfiles->Init(this->GetRemoteProfileName()))
+		return false;
 
 	result=InitializeLIRC();
 
@@ -160,6 +143,8 @@ void RemoteController::DeInit()
 		close(this->pollFd);
 		this->pollFd=-1;
 	}
+
+	this->remoteControllerProfiles->DeInit();
 	Logger::LogDebug("RemoteController::DeInit -> Deinitialized Remote controller");
 }
 
@@ -170,8 +155,12 @@ int RemoteController::InitializeLIRC()
 
 	Logger::LogDebug("RemoteController::InitializeLIRC -> Open LIRC device: %s.", lircDevice);
 
+	Logger::LogDebug("RemoteController::InitializeLIRC -> Ping: %d", this->pollFd);
+
 	if (this->pollFd!=-1)
 		close(this->pollFd);
+
+	Logger::LogDebug("RemoteController::InitializeLIRC -> Ping ...");
 
 	result=this->SetIRDeviceProtocol(lircDevice);
 
@@ -190,7 +179,9 @@ int RemoteController::SetIRDeviceProtocol(const char *lircDevice)
 	struct stat statResult;
 	char fn[2048];
 
-	Logger::LogDebug("RemoteController::SetIRDeviceProtocol -> Setting IR device protocol to NEC.");
+	const char *protoName=this->remoteControllerProfiles->GetProtocolName();
+
+	Logger::LogDebug("RemoteController::SetIRDeviceProtocol -> Setting IR device protocol to %s.", protoName);
 	if (stat(lircDevice, &statResult)!=0)
 	{
 		if (errno == ENOENT)
@@ -221,10 +212,10 @@ int RemoteController::SetIRDeviceProtocol(const char *lircDevice)
 		return errno;
 	}
 
-	len=strlen(RC_PROTOCOL_NAME);
-	if (write(fd, RC_PROTOCOL_NAME, len)!=len)
+	len=strlen(protoName);
+	if (write(fd, protoName, len)!=len)
 	{
-		Logger::LogError("Error setting IR protocol to %s.", RC_PROTOCOL_NAME);
+		Logger::LogError("Error setting IR protocol to %s.", protoName);
 		result=EINVAL;
 	}
 
@@ -304,9 +295,6 @@ void RemoteController::ParseScanCodes(lirc_scancode_t* scanCodes,
 		if (this->CheckSoftwareRepeatDetector(scanCodes[i].scancode, repeated))
 			repeated=true;
 
-		if (this->FilterOutScanCode(scanCodes[i].scancode, repeated, toggled))
-			break;
-
 		this->ProcessScanCode(scanCodes[i].scancode, repeated, toggled);
 	}
 }
@@ -357,55 +345,26 @@ gboolean RemoteController::SoftwareRepeatDetectorTimeoutFunc(gpointer data)
 	return FALSE;
 }
 
-bool RemoteController::FilterOutScanCode(unsigned long scancode, bool repeated,
+bool RemoteController::FilterRepeatedCmds(RemoteControllerProfiles::RemoteCommand cmd, bool repeated,
 		bool toggled)
 {
-	// all repeated events but the ones for up and down (vol up and vol down) are suppressed
-	return repeated && scancode != CODE_UP && scancode != CODE2_VOLUP
-			&& scancode != CODE_DOWN && scancode != CODE2_VOLDOWN;
+	// all repeated events but the ones for vol up and down are suppressed
+	return repeated && cmd != RemoteControllerProfiles::CMD_VOL_UP && cmd != RemoteControllerProfiles::CMD_VOL_DOWN;
 }
 
 void RemoteController::ProcessScanCode(unsigned long scancode, bool repeated,
 		bool toggled)
 {
-	bool cmdFound=true;
-	RemoteCommand cmd;
+	RemoteControllerProfiles::RemoteCommand cmd;
+	cmd=this->remoteControllerProfiles->GetCommandFromScanCode(scancode);
 
-	switch(scancode)
-	{
-	case CODE_STANDBY:
-	case CODE2_STANDBY:
-		cmd=CMD_POWER;
-		break;
-	case CODE_ROTATE:
-	case CODE2_MODE:
-		cmd=CMD_SRC_NEXT;
-		break;
-	case CODE_UP:
-	case CODE2_VOLUP:
-		cmd=CMD_VOL_UP;
-		break;
-	case CODE_DOWN:
-	case CODE2_VOLDOWN:
-		cmd=CMD_VOL_DOWN;
-		break;
-	case CODE_ENTER:
-	case CODE2_MUTE:
-		cmd=CMD_MUTE;
-		break;
-	case CODE_RIGHT:
-	case CODE2_NEXT:
-		cmd=CMD_NEXT;
-		break;
-	case CODE_LEFT:
-	case CODE2_PREV:
-		cmd=CMD_PREV;
-		break;
-	default:
-		cmdFound=false;
-	}
+	if (cmd == RemoteControllerProfiles::__NO_CMD__)
+		return;
 
-	if (cmdFound && this->listener != NULL)
+	if (this->FilterRepeatedCmds(cmd, repeated, toggled))
+		return;
+
+	if (this->listener != NULL)
 		this->listener->OnCommandReceived(cmd);
 }
 
@@ -424,8 +383,28 @@ bool RemoteController::ParseConfigFileItem(GKeyFile* confFile, const char* group
 		else
 			return false;
 	}
+	else if (strcasecmp(key, CONFIG_TAG_RC_PROFILE_NAME)==0)
+	{
+		char *name;
+		if (Configuration::GetStringValueFromKey(confFile,key,group, &name))
+		{
+			if (this->remoteProfileName!=NULL)
+				free(this->remoteProfileName);
+			this->remoteProfileName=name;
+		}
+		else
+			return false;
+	}
 
 	return true;
+}
+
+const char* RemoteController::GetRemoteProfileName()
+{
+	if (this->remoteProfileName!=NULL)
+		return this->remoteProfileName;
+	else
+		return DEFAULT_RC_PROFILE_NAME;
 }
 
 bool RemoteController::IsConfigFileGroupKnown(const char* group)

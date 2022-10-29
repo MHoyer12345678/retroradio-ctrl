@@ -13,6 +13,8 @@
 
 #include <cpp-app-utils/Configuration.h>
 
+#include "RemoteControllerProfiles.h"
+
 extern "C"
 {
 	typedef struct lirc_scancode lirc_scancode_t;
@@ -25,27 +27,19 @@ namespace retroradio_controller {
 class RemoteController : public Configuration::IConfigurationParserModule {
 
 public:
-	enum RemoteCommand
-	{
-		CMD_POWER,
-		CMD_SRC_NEXT,
-		CMD_VOL_UP,
-		CMD_VOL_DOWN,
-		CMD_MUTE,
-		CMD_NEXT,
-		CMD_PREV
-	};
-
-
 	class IRemoteControllerListener {
 	public:
-		virtual void OnCommandReceived(RemoteCommand cmd)=0;
+		virtual void OnCommandReceived(RemoteControllerProfiles::RemoteCommand cmd)=0;
 	};
 
 private:
+	RemoteControllerProfiles *remoteControllerProfiles;
+
 	IRemoteControllerListener *listener;
 
 	char *inputDeviceName;
+
+	char *remoteProfileName;
 
 	guint softwareRepeatDetectorTimerId;
 
@@ -73,6 +67,8 @@ private:
 
 	const char *GetLircDeviceName();
 
+	const char *GetRemoteProfileName();
+
 	static gboolean OnLircEvent(gint fd, GIOCondition condition, gpointer user_data);
 
 	void ReadLircEvent();
@@ -83,7 +79,7 @@ private:
 
 	static gboolean SoftwareRepeatDetectorTimeoutFunc(gpointer data);
 
-	bool FilterOutScanCode(unsigned long scancode, bool repeated, bool toggled);
+	bool FilterRepeatedCmds(RemoteControllerProfiles::RemoteCommand cmd, bool repeated, bool toggled);
 
 	void ProcessScanCode(unsigned long scancode, bool repeated, bool toggled);
 

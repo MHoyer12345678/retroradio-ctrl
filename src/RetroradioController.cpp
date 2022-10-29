@@ -146,11 +146,11 @@ void RetroradioController::Run()
 }
 
 void RetroradioController::OnCommandReceived(
-		RemoteController::RemoteCommand cmd)
+		RemoteControllerProfiles::RemoteCommand cmd)
 {
 	Logger::LogDebug("RetroradioController::OnCommandReceived -> Received IR command: %d", cmd);
 
-	if (cmd==RemoteController::CMD_POWER)
+	if (cmd==RemoteControllerProfiles::CMD_POWER)
 	{
 		this->stateMachine->OnIRPowerCommandReceived();
 		return;
@@ -160,22 +160,22 @@ void RetroradioController::OnCommandReceived(
 	if (!this->stateMachine->IsPowered())
 		return;
 
-	if (cmd==RemoteController::CMD_VOL_UP)
+	if (cmd==RemoteControllerProfiles::CMD_VOL_UP)
 		this->audioController->VolumeUp();
-	else if (cmd==RemoteController::CMD_VOL_DOWN)
+	else if (cmd==RemoteControllerProfiles::CMD_VOL_DOWN)
 		this->audioController->VolumeDown();
-	else if (cmd==RemoteController::CMD_MUTE)
+	else if (cmd==RemoteControllerProfiles::CMD_MUTE)
 		this->audioController->ToggleMute();
 
 	//don't send next/prev/src command further when we are just resuming from standby
 	if (!this->stateMachine->IsActive())
 		return;
 
-	if (cmd==RemoteController::CMD_NEXT)
+	if (cmd==RemoteControllerProfiles::CMD_NEXT)
 		this->audioController->TriggerSourceNextPressed();
-	else if (cmd==RemoteController::CMD_PREV)
+	else if (cmd==RemoteControllerProfiles::CMD_PREV)
 		this->audioController->TriggerSourcePrevPressed();
-	else if (cmd==RemoteController::CMD_SRC_NEXT)
+	else if (cmd==RemoteControllerProfiles::CMD_SRC_NEXT)
 		this->audioController->ChangeToNextSource();
 }
 

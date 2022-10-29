@@ -20,6 +20,8 @@ retroradio_controller_SOURCES =	\
 	MainVolumeControl.h								\
 	RemoteController.cpp							\
 	RemoteController.h								\
+	RemoteControllerProfiles.cpp					\
+	RemoteControllerProfiles.h						\
 	PowerStateMachine.cpp							\
 	PowerStateMachine.h								\
 	ConnObserverFile.cpp							\

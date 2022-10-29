@@ -64,7 +64,7 @@ private:
 public:
 
 	//RemoteController::IRemoteControllerListener
-	virtual void OnCommandReceived(RemoteController::RemoteCommand cmd);
+	virtual void OnCommandReceived(RemoteControllerProfiles::RemoteCommand cmd);
 
 	//ConnObserverFile::Listener
 	virtual void OnConnectionEstablished();
