@@ -115,6 +115,8 @@ public:
 
 	void TriggerSourcePrevPressed();
 
+	void TriggerFavPressed(AbstractAudioSource::FavoriteT favorite);
+
 	virtual void OnStateChanged(AbstractAudioSource *src, AbstractAudioSource::State newState);
 
 	State GetState();

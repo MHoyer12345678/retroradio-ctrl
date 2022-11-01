@@ -174,6 +174,13 @@ void AudioController::TriggerSourcePrevPressed()
 	this->audioSources->GetCurrentSource()->Previous();
 }
 
+void AudioController::TriggerFavPressed(AbstractAudioSource::FavoriteT favorite)
+{
+	Logger::LogDebug("AudioController::TriggerSourcePrevPressed -> Audio controller request to trigger"
+			" current source that a favorite key has been pressed. Fav: %d", favorite);
+
+	this->audioSources->GetCurrentSource()->Favorite(favorite);
+}
 
 void AudioController::OnStateChanged(AbstractAudioSource *src, AbstractAudioSource::State newState)
 {

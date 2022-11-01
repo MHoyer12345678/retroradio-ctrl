@@ -23,6 +23,21 @@ class AbstractAudioSource : public SourceMuteRampCtrl::IMuteRampCtrlListener,
 {
 
 public:
+	enum FavoriteT
+	{
+		_FAV_NOT_SET_			= 0xFF,
+		FAV0					= 0x00,
+		FAV1					= 0x01,
+		FAV2					= 0x02,
+		FAV3					= 0x03,
+		FAV4					= 0x04,
+		FAV5					= 0x05,
+		FAV6					= 0x06,
+		FAV7					= 0x07,
+		FAV8					= 0x08,
+		FAV9					= 0x09,
+	};
+
 	enum State
 	{
 		_NOT_SET			= 0,
@@ -164,6 +179,8 @@ public:
 	virtual void Next();
 
 	virtual void Previous();
+
+	virtual void Favorite(FavoriteT favorite);
 
 	const char *GetName();
 

@@ -26,14 +26,24 @@ class RemoteControllerProfiles {
 public:
 	enum RemoteCommand
 	{
-		__NO_CMD__,
-		CMD_POWER,
-		CMD_SRC_NEXT,
-		CMD_VOL_UP,
-		CMD_VOL_DOWN,
-		CMD_MUTE,
-		CMD_NEXT,
-		CMD_PREV
+		__NO_CMD__		= 0x00,
+		CMD_POWER		= 0x01,
+		CMD_SRC_NEXT	= 0x02,
+		CMD_VOL_UP		= 0x03,
+		CMD_VOL_DOWN	= 0x04,
+		CMD_MUTE		= 0x05,
+		CMD_NEXT		= 0x06,
+		CMD_PREV		= 0x07,
+		CMD_FAV0		= 0x08,
+		CMD_FAV1		= 0x09,
+		CMD_FAV2		= 0x0A,
+		CMD_FAV3		= 0x0B,
+		CMD_FAV4		= 0x0C,
+		CMD_FAV5		= 0x0D,
+		CMD_FAV6		= 0x0E,
+		CMD_FAV7		= 0x0F,
+		CMD_FAV8		= 0x10,
+		CMD_FAV9		= 0x11
 	};
 
 private:

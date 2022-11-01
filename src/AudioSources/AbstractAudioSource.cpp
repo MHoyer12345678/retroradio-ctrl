@@ -127,6 +127,11 @@ void AbstractAudioSource::Previous()
 	Logger::LogDebug("AbstractAudioSource::Previous - Source %s received previous command.", this->name);
 }
 
+void AbstractAudioSource::Favorite(FavoriteT favorite)
+{
+	Logger::LogDebug("AbstractAudioSource::Previous - Source %s received favorite command. Fav: %d", this->name, favorite);
+}
+
 AbstractAudioSource *AbstractAudioSource::GetSuccessor()
 {
 	return this->successor;

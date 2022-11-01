@@ -34,6 +34,8 @@ private:
 
 	unsigned int trackNr;
 
+	unsigned int queueLength;
+
 	guint pollSourceId;
 
 	guint mpdWatchdogTimerId;
@@ -65,6 +67,10 @@ private:
 	virtual void OnRampFinished(bool canceled);
 
 	void KickOffChangeTrackTransition();
+
+	void ProcessPendingSelectTrackCommand();
+
+	void ProcessPendingNextPrevCommands();
 
 	void ProcessPendingTrackChangeCommands();
 
@@ -110,6 +116,8 @@ public:
 	virtual void Next();
 
 	virtual void Previous();
+
+	virtual void Favorite(FavoriteT favorite);
 
 	virtual bool ParseConfigFileItem(GKeyFile *confFile, const char *group, const char *key);
 };

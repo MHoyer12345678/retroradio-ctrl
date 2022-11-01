@@ -10,6 +10,8 @@
 
 namespace retroradio_controller {
 
+#define _NO_TRACK_SET_		-1
+
 class TrackChangeTransition {
 public:
 	enum State
@@ -21,6 +23,9 @@ public:
 
 private:
 	State state;
+
+	//an absolute track number has been selected is stored here
+	int trackNoSelected;
 
 	//positive numbers means number of next() calls to MPD, negative number means number of previous() calls to MPD
 	int noPendingTrackChanges;
@@ -44,9 +49,15 @@ public:
 
 	void PreviousPressed();
 
+	void TrackSelected(unsigned int trackNo);
+
 	bool NextCallsPending();
 
 	bool PreviousCallsPending();
+
+	bool TrackSelectionPending();
+
+	int GetSelectedTrack(bool reset);
 
 	State GetState();
 };

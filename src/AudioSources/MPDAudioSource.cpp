@@ -44,6 +44,7 @@ MPDAudioSource::MPDAudioSource(const char *srcName, AbstractAudioSource *predece
 		pollSourceId(0),
 		mpdWatchdogTimerId(0),
 		trackNr(0),
+		queueLength(0),
 		mpdHost(NULL),
 		mpdPort(MPD_DEFAULT_PORT),
 		mpdStationPlayList(NULL)
@@ -252,6 +253,8 @@ void MPDAudioSource::CheckMPDAliveAndReadTrackPos()
 			Logger::LogDebug("MPDAudioSource::CheckMPDAlive - Currently playing track: %d", this->trackNr);
 		}
 
+		this->queueLength=mpd_status_get_queue_length(statusResult);
+
 		mpd_status_free(statusResult);
 		return;
 	}
@@ -374,7 +377,57 @@ void MPDAudioSource::Previous()
 	}
 }
 
+void MPDAudioSource::Favorite(FavoriteT favorite)
+{
+	Logger::LogDebug("MPDAudioSource::Previous - MPD source received favorite command. Fav: %d", favorite);
+	if (this->GetState()==PLAYING)
+	{
+
+		this->CheckMPDAliveAndReadTrackPos();
+		if (favorite<0 || favorite>this->queueLength-1)
+		{
+			Logger::LogInfo("Ignoring favorite %d since it is out of mpd queue range (0-%d).", favorite, this->queueLength-1);
+			return;
+		}
+
+		if (favorite==this->trackNr)
+		{
+			Logger::LogInfo("Ignoring favorite %d since it is currently played.", favorite);
+			return;
+		}
+
+		switch(this->trackChangeTransition.GetState())
+		{
+		case TrackChangeTransition::IDLE:
+		case TrackChangeTransition::RAMPING_UP:
+			this->KickOffChangeTrackTransition();
+			//No break by intention: Need to set first next call as well after kicking off the ramp
+		case TrackChangeTransition::RAMPING_DOWN:
+			this->trackChangeTransition.TrackSelected((unsigned int)favorite);
+			break;
+		}
+	}
+}
+
 void MPDAudioSource::ProcessPendingTrackChangeCommands()
+{
+	this->ProcessPendingSelectTrackCommand();
+	this->ProcessPendingNextPrevCommands();
+}
+
+void MPDAudioSource::ProcessPendingSelectTrackCommand()
+{
+	int trackNo=this->trackChangeTransition.GetSelectedTrack(true);
+	if (this->mpdCon==NULL || trackNo==_NO_TRACK_SET_)
+		return;
+
+	mpd_run_play_pos(this->mpdCon, trackNo);
+ 	Logger::LogDebug("MPDAudioSource::ProcessPendingSelectTrackCommand - MPD source changed to track %d.",trackNo);
+	this->CheckMPDAliveAndReadTrackPos();
+	RetroradioController::Instance()->GetPersistentState()->SetMPDCurrentTrackNr(this->trackNr);
+}
+
+void MPDAudioSource::ProcessPendingNextPrevCommands()
 {
 	bool changeForward=this->trackChangeTransition.NextCallsPending();
 	while (this->trackChangeTransition.OneChangeProcessed())
@@ -384,7 +437,7 @@ void MPDAudioSource::ProcessPendingTrackChangeCommands()
 			mpd_run_next(this->mpdCon);
 		else
 			mpd_run_previous(this->mpdCon);
-		Logger::LogDebug("MPDAudioSource::ProcessPendingTrackChangeCommands - MPD source changed to %s track.",
+		Logger::LogDebug("MPDAudioSource::ProcessPendingNextPrevCommands - MPD source changed to %s track.",
 				changeForward ? "next" : "previous");
 	}
 	this->CheckMPDAliveAndReadTrackPos();
@@ -394,7 +447,6 @@ void MPDAudioSource::ProcessPendingTrackChangeCommands()
 void MPDAudioSource::FinalizeChangeTrackTransition()
 {
 	this->trackChangeTransition.Finalize();
-	if (!this->IsMuted())
 	if (!this->IsMuted())
 		this->StartUnMuteRamp(SourceMuteRampCtrl::NORMAL);
 	else

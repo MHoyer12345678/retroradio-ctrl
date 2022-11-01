@@ -140,6 +140,16 @@ void RemoteControllerProfiles::CreateTvstickRC5RemoteProfile()
 	this->scancode2commandMap[RC51_CODE_CHUP]=CMD_NEXT;
 	this->scancode2commandMap[RC51_CODE_MUTE]=CMD_MUTE;
 	this->scancode2commandMap[RC51_CODE_RIGHT]=CMD_SRC_NEXT;
+	this->scancode2commandMap[RC51_CODE_0]=CMD_FAV0;
+	this->scancode2commandMap[RC51_CODE_1]=CMD_FAV1;
+	this->scancode2commandMap[RC51_CODE_2]=CMD_FAV2;
+	this->scancode2commandMap[RC51_CODE_3]=CMD_FAV3;
+	this->scancode2commandMap[RC51_CODE_4]=CMD_FAV4;
+	this->scancode2commandMap[RC51_CODE_5]=CMD_FAV5;
+	this->scancode2commandMap[RC51_CODE_6]=CMD_FAV6;
+	this->scancode2commandMap[RC51_CODE_7]=CMD_FAV7;
+	this->scancode2commandMap[RC51_CODE_8]=CMD_FAV8;
+	this->scancode2commandMap[RC51_CODE_9]=CMD_FAV9;
 }
 
 const char* RemoteControllerProfiles::GetProtocolName()

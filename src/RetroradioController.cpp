@@ -177,6 +177,12 @@ void RetroradioController::OnCommandReceived(
 		this->audioController->TriggerSourcePrevPressed();
 	else if (cmd==RemoteControllerProfiles::CMD_SRC_NEXT)
 		this->audioController->ChangeToNextSource();
+	else if (cmd>=RemoteControllerProfiles::CMD_FAV0 && cmd<=RemoteControllerProfiles::CMD_FAV9)
+	{
+		AbstractAudioSource::FavoriteT fav;
+		fav=(AbstractAudioSource::FavoriteT)((cmd-RemoteControllerProfiles::CMD_FAV0)+AbstractAudioSource::FAV0);
+		this->audioController->TriggerFavPressed(fav);
+	}
 }
 
 void RetroradioController::OnSoundCardReady()
