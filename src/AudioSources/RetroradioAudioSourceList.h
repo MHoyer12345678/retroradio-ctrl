@@ -41,12 +41,12 @@ private:
 
 	AbstractAudioSource *previousAudioSource;
 
-	AbstractAudioSource::IAudioSourceStateListener *srcListener;
+	AbstractAudioSource::IAudioSourceListener *srcListener;
 
 	void FillList(Configuration *configuration);
 
 public:
-	RetroradioAudioSourceList(AbstractAudioSource::IAudioSourceStateListener *srcListener,
+	RetroradioAudioSourceList(AbstractAudioSource::IAudioSourceListener *srcListener,
 			Configuration *configuration);
 
 	~RetroradioAudioSourceList();
@@ -62,8 +62,6 @@ public:
 	bool AreAllActivated();
 
 	bool AreAllDeactivated();
-
-	void ChangeToSource(const char *sourceName);
 
 	void ChangeToNextSource();
 

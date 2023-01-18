@@ -60,18 +60,41 @@ void AudioController::DeInit()
 	Logger::LogDebug("AudioController::DeInit -> Deinitialized Audio controller");
 }
 
-void AudioController::DoChangeToSource()
-{
-	//TODO: volume ramp down
-	//TODO: change source to this->currentSource
-	//TODO: Persist state
-	//TODO: volume ramp up
-}
+#error: critical todos
+- refactoring: Remove stop transition calls from here. Srces must be able on their
+own to react on state changes from start playing to stop playing
+- add CHG_SRC_NEW_UP & CHG_SRC_CUR_DOWN to all state checks in the controller (switch case & ifs ...)
 
 void AudioController::ChangeToNextSource()
 {
 	Logger::LogDebug("AudioController::ChangeToNextSource -> Audio Controller requested to change to next source.");
-	this->DoChangeToSource();
+
+	switch(this->state)
+	{
+	case ACTIVATING_SOURCES:
+		//if in activation sequence, src can just be changed, no ramping
+		this->audioSources->ChangeToNextSource();
+		break;
+	case ACTIVATED:
+		//complete sequence cur down -> select new -> new up
+		this->EnterChangeSrcCurDown();
+		break;
+	case STARTING_PLAYING:
+		//stop ramps
+		this->audioSources->StopTransitions();
+		break;
+	case CHG_SRC_CUR_DOWN:
+		break;
+	case CHG_SRC_NEW_UP:
+		break;
+
+	//ignoring by intention.
+	case STARTING_UP: //No src changes while radio is booting up
+	case STOPING_PLAYING: //No src changes in poweroff sequence
+	case DEACTIVATING_SOURCES: //No src changes in poweroff sequence
+	case DEACTIVATED: //No src changes when powered off
+	default: //No src changes when controller is not initialized
+	}
 }
 
 bool AudioController::CheckSourcesStartupState()

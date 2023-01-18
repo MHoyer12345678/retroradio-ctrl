@@ -95,7 +95,7 @@ protected:
 
 public:
 	MPDAudioSource(const char *srcName, AbstractAudioSource *predecessor,
-			IAudioSourceStateListener *srcListener);
+			IAudioSourceListener *srcListener);
 
 	virtual ~MPDAudioSource();
 

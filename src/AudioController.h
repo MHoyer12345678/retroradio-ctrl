@@ -16,7 +16,7 @@
 namespace retroradio_controller
 {
 
-class AudioController : public AbstractAudioSource::IAudioSourceStateListener
+class AudioController : public AbstractAudioSource::IAudioSourceListener
 {
 
 public:
@@ -29,7 +29,9 @@ public:
 		STARTING_PLAYING		= 4,
 		ACTIVATED				= 5,
 		STOPING_PLAYING			= 6,
-		DEACTIVATING_SOURCES	= 7
+		DEACTIVATING_SOURCES	= 7,
+		CHG_SRC_CUR_DOWN		= 8,
+		CHG_SRC_NEW_UP			= 9
 	};
 
 	static const char *StateNames[];
@@ -56,8 +58,6 @@ private:
 	MainVolumeControl *mainVolumeCtrl;
 
 	State state;
-
-	void DoChangeToSource();
 
 	void MuteMasterVolume();
 
@@ -96,6 +96,12 @@ public:
 	void EnterActivatingSources(bool need2ReOpenSoundDevices);
 
 	void EnterStartPlaying();
+
+	void EnterActivated();
+
+	void EnterChangeSrcCurDown();
+
+	void EnterChangeSrcNewUp();
 
 	void EnterActivated();
 

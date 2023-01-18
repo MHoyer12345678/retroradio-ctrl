@@ -43,11 +43,12 @@ retroradio_controller_SOURCES =	\
 	AudioSources/SourceMuteRampCtrl.cpp				\
 	AudioSources/SourceMuteRampCtrl.h				\
 	AudioSources/RetroradioAudioSourceList.cpp		\
-	AudioSources/RetroradioAudioSourceList.h
+	AudioSources/RetroradioAudioSourceList.h		\
+	AudioSources/generated/SqueezeClientInterface.c	\
+	AudioSources/generated/SqueezeClientInterface.h
 
 
 retroradio_controller_CPPFLAGS = \
-		-I generated			\
 		$(GIO_LIBS_CFLAGS)				\
 		$(GIO_UNIX_CFLAGS)				\
 		$(GLIB_CFLAG)					\
@@ -67,3 +68,13 @@ retroradio_controller_LDADD	  = \
 		$(UDEV_LIBS)			\
 		$(ALSA_LIBS)
 
+# List generated headers here to assert that they are available when built is started
+BUILT_SOURCES =  AudioSources/generated/SqueezeClientInterface.h
+
+# Delete all generated files on 'make clean'
+CLEANFILES    =  AudioSources/generated/SqueezeClientInterface.c  \
+                 AudioSources/generated/SqueezeClientInterface.h
+
+# Targets to create generated sources during the build
+AudioSources/generated/SqueezeClientInterface.c AudioSources/generated/SqueezeClientInterface.h: AudioSources/dbus/squeezeclient-bin.xml
+	gdbus-codegen --interface-prefix=SqueezeClientBinDBus. --generate-c-code=AudioSources/generated/SqueezeClientInterface AudioSources/dbus/squeezeclient-bin.xml

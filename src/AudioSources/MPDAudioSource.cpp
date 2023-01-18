@@ -38,7 +38,7 @@ using namespace retroradio_controller;
 //TODO: adapt to be a bit more robust when connection is lost
 
 MPDAudioSource::MPDAudioSource(const char *srcName, AbstractAudioSource *predecessor,
-		IAudioSourceStateListener *srcListener) :
+		IAudioSourceListener *srcListener) :
 		AbstractAudioSource(srcName, predecessor, srcListener),
 		mpdCon(NULL),
 		pollSourceId(0),
