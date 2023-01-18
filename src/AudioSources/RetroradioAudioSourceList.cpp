@@ -28,7 +28,7 @@ const char *RetroradioAudioSourceList::DLNA_SOURCE="retroradio_dlna_source";
 const char *RetroradioAudioSourceList::LMC_SOURCE="retroradio_lmc_source";
 
 
-RetroradioAudioSourceList::RetroradioAudioSourceList(AbstractAudioSource::IAudioSourceStateListener *srcListener,
+RetroradioAudioSourceList::RetroradioAudioSourceList(AbstractAudioSource::IAudioSourceListener *srcListener,
 		Configuration *configuration) :	srcListener(srcListener)
 {
 	this->FillList(configuration);
@@ -86,21 +86,6 @@ AbstractAudioSource* RetroradioAudioSourceList::CreateDLNAAudioSource(const char
 AbstractAudioSource* RetroradioAudioSourceList::CreateLMCAudioSource(const char *srcName, AbstractAudioSource *predecessor)
 {
 	return new LMCAudioSource(srcName, predecessor, this->srcListener);
-}
-
-void RetroradioAudioSourceList::ChangeToSource(const char* sourceName)
-{
-	for (AbstractAudioSource *itr=this->audioSources;itr != NULL; itr=itr->GetSuccessor())
-	{
-		if (itr->GetName()==sourceName)
-		{
-			this->previousAudioSource=this->currentAudioSource;
-			this->currentAudioSource=itr;
-			return;
-		}
-	}
-
-	Logger::LogError("Change to unknown Source %s requested.", sourceName);
 }
 
 void RetroradioAudioSourceList::ChangeToNextSource()

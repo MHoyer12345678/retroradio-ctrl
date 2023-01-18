@@ -26,7 +26,7 @@ protected:
 
 public:
 	DLNAAudioSource(const char *srcName, AbstractAudioSource *predecessor,
-			IAudioSourceStateListener *srcListener);
+			IAudioSourceListener *srcListener);
 
 	virtual ~DLNAAudioSource();
 

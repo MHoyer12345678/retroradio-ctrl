@@ -54,7 +54,7 @@ public:
 
 	static const char *StateNames[];
 
-	class IAudioSourceStateListener
+	class IAudioSourceListener
 	{
 	public:
 		virtual void OnStateChanged(AbstractAudioSource *src, State newState)=0;
@@ -76,7 +76,7 @@ private:
 
 	SourceMuteRampCtrl *muteRampCtrl;
 
-	IAudioSourceStateListener *listener;
+	IAudioSourceListener *listener;
 
 	AbstractAudioSource *predecessor;
 
@@ -144,7 +144,7 @@ protected:
 
 public:
 	AbstractAudioSource(const char *srcName, AbstractAudioSource *predecessor,
-			IAudioSourceStateListener *listener);
+			IAudioSourceListener *listener);
 
 	virtual ~AbstractAudioSource();
 

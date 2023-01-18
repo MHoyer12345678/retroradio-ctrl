@@ -18,7 +18,7 @@ using namespace retroradio_controller;
 #define DLNA_DEFAULT_SOUND_CARD_NAME	"default"
 
 DLNAAudioSource::DLNAAudioSource(const char *srcName, AbstractAudioSource *predecessor,
-		IAudioSourceStateListener *srcListener) :
+		IAudioSourceListener *srcListener) :
 		AbstractAudioSource(srcName, predecessor, srcListener)
 {
 

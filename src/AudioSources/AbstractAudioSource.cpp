@@ -34,7 +34,7 @@ const char *AbstractAudioSource::StateNames[] =
 
 AbstractAudioSource::AbstractAudioSource(const char *srcName,
 		AbstractAudioSource* predecessor,
-		IAudioSourceStateListener *listener) :
+		IAudioSourceListener *listener) :
 		listener(listener),
 		name(srcName),
 		successor(NULL),

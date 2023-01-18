@@ -1,0 +1,34 @@
+<node>
+  <interface name="Squeeze.Client.Control">
+
+    <method name="RequestPlay"/>
+
+    <method name="RequestPauseResume">
+	    <arg name="which" type="y" direction="in"/>
+    </method>
+
+    <method name="RequestStop"/>
+
+    <method name="RequestNext"/>
+    
+    <method name="RequestPrev"/>
+
+    <method name="RequestPowerStateChange">
+		<arg name="state" direction="in" type="y"/>	
+    </method>
+    
+    <method name="RequestVolUp"/>
+    
+    <method name="RequestVolDown"/>
+
+    <method name="RequestMute"/>
+
+	<property name="VolumeL" type="u" access="read"/>
+
+	<property name="VolumeR" type="u" access="read"/>
+
+	<property name="SqueezeClientState" type="y" access="read"/>
+
+	<signal name="VolumeChanged"/>    
+  </interface>
+</node>
