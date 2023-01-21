@@ -88,7 +88,7 @@ bool RemoteControllerProfiles::Init(const char *profileName)
 
 	if (strcmp(profileName, SMALL_NEC_REMOTE_PROFILE_ID)==0)
 		this->CreateSmallNECRemoteProfile();
-	if (strcmp(profileName, TVSTICK_RC5_REMOTE_PROFILE_ID)==0)
+	else if (strcmp(profileName, TVSTICK_RC5_REMOTE_PROFILE_ID)==0)
 		this->CreateTvstickRC5RemoteProfile();
 	else
 	{
