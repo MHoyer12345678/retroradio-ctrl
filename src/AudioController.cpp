@@ -150,14 +150,8 @@ void AudioController::DeactivateController(bool doMuteRamp)
 	//already on deactivation sequence? -> do nothing
 	if (this->state==DEACTIVATED || this->state==DEACTIVATING_SOURCES || this->state==STOPING_PLAYING) return;
 
-	if (this->state==ACTIVATED)
+	if (this->state==ACTIVATED || this->state==STARTING_PLAYING)
 		this->EnterStopPlaying(doMuteRamp);
-	else if (this->state==STARTING_PLAYING)
-	{
-		this->audioSources->StopTransitions();
-		this->state=ACTIVATED;
-		this->EnterStopPlaying(doMuteRamp);
-	}
 	else if (this->state==ACTIVATING_SOURCES)
 		this->EnterDeactivatingSources();
 }
@@ -223,7 +217,7 @@ void AudioController::OnStateChanged(AbstractAudioSource *src, AbstractAudioSour
 
 void AudioController::EnterStopPlaying(bool doMuteRamp)
 {
-	this->CheckStateMachine(this->state==ACTIVATED, "STOP_PLAYING");
+	this->CheckStateMachine(this->state==ACTIVATED || this->state==STARTING_PLAYING, "STOP_PLAYING");
 	this->SetState(STOPING_PLAYING);
 	this->audioSources->GetCurrentSource()->GoOffline(doMuteRamp);
 	if (!this->audioSources->GetCurrentSource()->IsPlaying() &&

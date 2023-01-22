@@ -1,8 +1,10 @@
-retroradio-ctrl (1.0.0-4) UNRELEASED; urgency=medium
+retroradio-ctrl (1.0.0-5) UNRELEASED; urgency=medium
 
   * add favorite key support
+  * refactoring mute ramps in sources. Stop transition now called in sources.
+  * fix bug in remote profiles
 
- -- Marko Hoyer <joe@muffel>  Tue, 01 Nov 2022 9:17:31 +0000
+ -- Marko Hoyer <joe@muffel>  Sun, 22 Jan 2023 08:44:06 +0000
 
 retroradio-ctrl (1.0.0-3) UNRELEASED; urgency=medium
 

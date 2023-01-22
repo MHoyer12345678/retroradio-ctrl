@@ -133,12 +133,6 @@ void RetroradioAudioSourceList::ActivateAll(bool need2ReOpenSoundDevices)
 		itr->Activate(need2ReOpenSoundDevices);
 }
 
-void RetroradioAudioSourceList::StopTransitions()
-{
-	for (AbstractAudioSource *itr=this->audioSources;itr != NULL; itr=itr->GetSuccessor())
-		itr->StopTransition();
-}
-
 bool RetroradioAudioSourceList::AreAllActivated()
 {
 	for (AbstractAudioSource *itr=this->audioSources;itr != NULL; itr=itr->GetSuccessor())
