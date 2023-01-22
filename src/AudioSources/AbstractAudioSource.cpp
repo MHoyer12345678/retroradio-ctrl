@@ -108,13 +108,25 @@ void AbstractAudioSource::GoOnline()
 
 void AbstractAudioSource::GoOffline(bool doMuteRamp)
 {
-	if (this->srcState!=PLAYING)
+	if (this->srcState!=PLAYING && this->srcState!=START_PLAYING && this->srcState!=START_PLAYING_RAMP)
 		return;
+
 	Logger::LogDebug("AbstractAudioSource::GoOffline - Source %s is now going offline.", this->name);
-	if (doMuteRamp)
-		this->EnterStopPlayingRamp();
-	else
+
+	if (this->srcState==START_PLAYING_RAMP || this->srcState==PLAYING)
+	{
+		if (this->srcState==START_PLAYING_RAMP)
+			this->StopMuteRamp();
+
+		if (doMuteRamp)
+			this->EnterStopPlayingRamp();
+		else
+			this->EnterStopPlaying();
+	}
+	else //state == START_PLAYING
+	{
 		this->EnterStopPlaying();
+	}
 }
 
 void AbstractAudioSource::Next()
@@ -301,7 +313,7 @@ bool AbstractAudioSource::IsActive()
 		this->srcState!=DEACTIVATING && this->srcState!=DEACTIVATED;
 }
 
-void AbstractAudioSource::StopTransition()
+void AbstractAudioSource::StopMuteRamp()
 {
 	Logger::LogDebug("AbstractAudioSource::StopTransition - Source %s requested to stop any transition ongoing.", this->name);
 	this->muteRampCtrl->StopOperation();

@@ -138,6 +138,8 @@ protected:
 	void StartUnMuteRamp(SourceMuteRampCtrl::RampSpeed speed);
 
 protected:
+	virtual void StopMuteRamp();
+
 	virtual bool IsMuteDownRampAllowed();
 
 	virtual bool IsMuteUpRampAllowed();
@@ -173,8 +175,6 @@ public:
 	virtual void GoOnline();
 
 	virtual void GoOffline(bool doMuteRamp);
-
-	virtual void StopTransition();
 
 	virtual void Next();
 

@@ -59,8 +59,6 @@ public:
 
 	void ActivateAll(bool need2ReOpenSoundDevices);
 
-	void StopTransitions();
-
 	bool AreAllActivated();
 
 	bool AreAllDeactivated();
