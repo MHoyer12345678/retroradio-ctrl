@@ -49,6 +49,14 @@ protected:
 
 	virtual bool IsStartupFinished();
 
+	virtual void DoStartPlaying();
+
+	virtual void DoStopPlaying();
+
+	virtual void Next();
+
+	virtual void Previous();
+
 public:
 	LMCAudioSource(const char *srcName, AbstractAudioSource *predecessor,
 			IAudioSourceListener *srcListener);
