@@ -8,8 +8,6 @@
 #ifndef SRC_RETRORADIOCONTROLLER_H_
 #define SRC_RETRORADIOCONTROLLER_H_
 
-#include "RemoteController.h"
-
 #include <glib.h>
 
 #include "RetroradioControllerConfiguration.h"
