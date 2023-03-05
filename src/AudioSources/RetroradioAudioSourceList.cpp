@@ -33,6 +33,7 @@ RetroradioAudioSourceList::RetroradioAudioSourceList(AbstractAudioSource::IAudio
 {
 	this->FillList(configuration);
 	this->currentAudioSource=this->audioSources;
+	this->scheduledAudioSource=this->currentAudioSource;
 }
 
 RetroradioAudioSourceList::~RetroradioAudioSourceList()
@@ -65,8 +66,8 @@ void RetroradioAudioSourceList::FillList(Configuration *configuration)
 {
 	AbstractAudioSource *nextSrc;
 	this->audioSources=CreateMPDAudioSource(MPD_SOURCE,NULL);
-	nextSrc=CreateDLNAAudioSource(DLNA_SOURCE, this->audioSources);
-	CreateLMCAudioSource(LMC_SOURCE,nextSrc);
+	nextSrc=CreateLMCAudioSource(LMC_SOURCE, this->audioSources);
+	CreateDLNAAudioSource(DLNA_SOURCE,nextSrc);
 
 	for (AbstractAudioSource *itr=this->audioSources;itr != NULL; itr=itr->GetSuccessor())
 		configuration->AddConfigurationModule(itr);
@@ -88,22 +89,9 @@ AbstractAudioSource* RetroradioAudioSourceList::CreateLMCAudioSource(const char 
 	return new LMCAudioSource(srcName, predecessor, this->srcListener);
 }
 
-void RetroradioAudioSourceList::ChangeToNextSource()
-{
-	this->previousAudioSource=this->currentAudioSource;
-	this->currentAudioSource=this->currentAudioSource->GetSuccessor();
-	if (this->currentAudioSource==NULL)
-		this->currentAudioSource=this->audioSources;
-}
-
 AbstractAudioSource* RetroradioAudioSourceList::GetCurrentSource()
 {
 	return this->currentAudioSource;
-}
-
-AbstractAudioSource* RetroradioAudioSourceList::GetPreviousSource()
-{
-	return this->previousAudioSource;
 }
 
 void RetroradioAudioSourceList::DeactivateAll()
@@ -154,4 +142,40 @@ const char* RetroradioAudioSourceList::GetDefaultSourceId()
 AbstractAudioSource *RetroradioAudioSourceList::GetIterator()
 {
 	return this->audioSources;
+}
+
+void RetroradioAudioSourceList::StartChangeToSourceNext()
+{
+	this->scheduledAudioSource=this->scheduledAudioSource->GetSuccessor();
+	if (this->scheduledAudioSource==NULL)
+		this->scheduledAudioSource=this->audioSources;
+}
+
+bool RetroradioAudioSourceList::StartChangeToSourceById(const char *srcId)
+{
+	for (AbstractAudioSource *itr=this->audioSources;itr!=NULL;itr=itr->GetSuccessor())
+	{
+		if (strcmp(srcId, itr->GetName())==0)
+		{
+			this->scheduledAudioSource=itr;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void RetroradioAudioSourceList::FinishChangeToSource()
+{
+	this->currentAudioSource=this->scheduledAudioSource;
+}
+
+AbstractAudioSource* RetroradioAudioSourceList::GetScheduledSource()
+{
+	return this->scheduledAudioSource;
+}
+
+bool RetroradioAudioSourceList::IsSourceChangeOngoing()
+{
+	return this->scheduledAudioSource!=this->currentAudioSource;
 }

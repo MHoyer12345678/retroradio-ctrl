@@ -24,10 +24,10 @@ const char *AudioController::StateNames[] =
 			"STARTING_PLAYING",
 			"ACTIVATED",
 			"STOPING_PLAYING",
-			"DEACTIVATING_SOURCES"
+			"DEACTIVATING_SOURCES",
+			"CHG_SRC_CUR_DOWN",
+			"CHG_SRC_NEW_UP"
 	};
-
-
 
 AudioController::AudioController(IStateListener *stateListener, Configuration *configuration) :
 		muted(false),
@@ -60,11 +60,6 @@ void AudioController::DeInit()
 	Logger::LogDebug("AudioController::DeInit -> Deinitialized Audio controller");
 }
 
-#error: critical todos
-- refactoring: Remove stop transition calls from here. Srces must be able on their
-own to react on state changes from start playing to stop playing
-- add CHG_SRC_NEW_UP & CHG_SRC_CUR_DOWN to all state checks in the controller (switch case & ifs ...)
-
 void AudioController::ChangeToNextSource()
 {
 	Logger::LogDebug("AudioController::ChangeToNextSource -> Audio Controller requested to change to next source.");
@@ -73,19 +68,21 @@ void AudioController::ChangeToNextSource()
 	{
 	case ACTIVATING_SOURCES:
 		//if in activation sequence, src can just be changed, no ramping
-		this->audioSources->ChangeToNextSource();
+		this->audioSources->StartChangeToSourceNext();
+		this->audioSources->FinishChangeToSource();
+		this->UpdateSrcLeds();
 		break;
 	case ACTIVATED:
-		//complete sequence cur down -> select new -> new up
+	case STARTING_PLAYING:
+	case CHG_SRC_NEW_UP:
+		// current source is playing or about to play or ramping up -> enter down sequence
 		this->EnterChangeSrcCurDown();
 		break;
-	case STARTING_PLAYING:
-		//stop ramps
-		this->audioSources->StopTransitions();
-		break;
 	case CHG_SRC_CUR_DOWN:
-		break;
-	case CHG_SRC_NEW_UP:
+		// already in down sequence of changing a src -> call next to switch on to
+		// next src being selected after down sequence is done
+		this->audioSources->StartChangeToSourceNext();
+		this->UpdateSrcLeds();
 		break;
 
 	//ignoring by intention.
@@ -94,6 +91,7 @@ void AudioController::ChangeToNextSource()
 	case DEACTIVATING_SOURCES: //No src changes in poweroff sequence
 	case DEACTIVATED: //No src changes when powered off
 	default: //No src changes when controller is not initialized
+		break;
 	}
 }
 
@@ -111,7 +109,7 @@ bool AudioController::CheckSourcesStartupState()
 	}
 
 	if (result)
-		RetroradioController::Instance()->GetGPIOController()->DisableSourcesLeds();
+		this->EnterDeactivated();
 
 	return result;
 }
@@ -162,7 +160,7 @@ void AudioController::VolumeDown()
 
 void AudioController::ActivateAudioController(bool need2ReOpenSoundDevices)
 {
-	if (this->state!=DEACTIVATED && this->state!=STARTING_UP) return;
+	if (this->state!=DEACTIVATED) return;
 	Logger::LogDebug("AudioController::ActivateAudioController -> Activating audio controller.");
 	this->EnterActivatingSources(need2ReOpenSoundDevices);
 }
@@ -170,25 +168,50 @@ void AudioController::ActivateAudioController(bool need2ReOpenSoundDevices)
 void AudioController::DeactivateController(bool doMuteRamp)
 {
 	Logger::LogDebug("AudioController::DeactivateAudioController -> DeActivating audio controller.");
-	//already on deactivation sequence? -> do nothing
-	if (this->state==DEACTIVATED || this->state==DEACTIVATING_SOURCES || this->state==STOPING_PLAYING) return;
 
-	if (this->state==ACTIVATED || this->state==STARTING_PLAYING)
-		this->EnterStopPlaying(doMuteRamp);
-	else if (this->state==ACTIVATING_SOURCES)
-		this->EnterDeactivatingSources();
+	switch(this->state)
+		{
+		case _NOT_SET:				//controller not initialized -> ignore request
+		case DEACTIVATED: 			//already deactivated? -> do nothing
+		case DEACTIVATING_SOURCES:  //already in deactivation sequence? -> do nothing
+		case STOPING_PLAYING:		//already in deactivation sequence? -> do nothing
+			break;
+
+		case ACTIVATED:				//playing -> stop playing
+		case STARTING_PLAYING:		//about to play after power on -> stop playing
+		case CHG_SRC_NEW_UP:		//about to play after src change -> stop playing
+			this->EnterStopPlaying(doMuteRamp);
+			break;
+
+		case ACTIVATING_SOURCES:	//activating sources, not yet playing -> deactivate sources
+			this->EnterDeactivatingSources();
+			break;
+
+		case CHG_SRC_CUR_DOWN:		//src change down sequence -> back to activated, kick off stop playing sequence
+			this->SetState(ACTIVATED); // back to active state ramp does not to be stopped, being kicked off again on stop playing
+			this->EnterStopPlaying(doMuteRamp);
+			break;
+		}
 }
 
 void AudioController::TriggerSourceNextPressed()
 {
 	Logger::LogDebug("AudioController::TriggerSourceNextPressed -> Audio controller request to trigger current source that next has pressed.");
-	this->audioSources->GetCurrentSource()->Next();
+
+	//command passed to scheduled src
+	//- in case of a src state transition: command passed already to new one
+	//- else: command is passed to current one (scheduled == current in case of no transition ongoing)
+	this->audioSources->GetScheduledSource()->Next();
 }
 
 void AudioController::TriggerSourcePrevPressed()
 {
 	Logger::LogDebug("AudioController::TriggerSourcePrevPressed -> Audio controller request to trigger current source that prev has pressed.");
-	this->audioSources->GetCurrentSource()->Previous();
+
+	//command passed to scheduled src
+	//- in case of a src state transition: command passed already to new one
+	//- else: command is passed to current one (scheduled == current in case of no transition ongoing)
+	this->audioSources->GetScheduledSource()->Previous();
 }
 
 void AudioController::TriggerFavPressed(AbstractAudioSource::FavoriteT favorite)
@@ -196,13 +219,18 @@ void AudioController::TriggerFavPressed(AbstractAudioSource::FavoriteT favorite)
 	Logger::LogDebug("AudioController::TriggerSourcePrevPressed -> Audio controller request to trigger"
 			" current source that a favorite key has been pressed. Fav: %d", favorite);
 
-	this->audioSources->GetCurrentSource()->Favorite(favorite);
+	//command passed to scheduled src
+	//- in case of a src state transition: command passed already to new one
+	//- else: command is passed to current one (scheduled == current in case of no transition ongoing)
+	this->audioSources->GetScheduledSource()->Favorite(favorite);
 }
 
 void AudioController::OnStateChanged(AbstractAudioSource *src, AbstractAudioSource::State newState)
 {
 	Logger::LogDebug("AudioController::OnStateChanged -> Audio controller received state change event from source %s. New State: %s",
 			src->GetName(), AbstractAudioSource::StateNames[newState]);
+
+	AbstractAudioSource* currentSrc=this->audioSources->GetCurrentSource();
 
 	switch(this->state)
 	{
@@ -220,20 +248,27 @@ void AudioController::OnStateChanged(AbstractAudioSource *src, AbstractAudioSour
 			this->EnterStartPlaying();
 		break;
 
+	case CHG_SRC_NEW_UP:
 	case STARTING_PLAYING:
-		if (this->audioSources->GetCurrentSource()->IsPlaying())
+		if (currentSrc->IsPlaying())
 			this->EnterActivated();
 		break;
 
 	case STOPING_PLAYING:
-		if (!this->audioSources->GetCurrentSource()->IsPlaying() &&
-			!this->audioSources->GetCurrentSource()->IsTransitioningFromOrToPlay())
+		if (!currentSrc->IsPlaying() &&
+			!currentSrc->IsTransitioningFromOrToPlay())
 			this->EnterDeactivatingSources();
 		break;
 
 	case DEACTIVATING_SOURCES:
 		if (!this->audioSources->AreAllDeactivated())
 			this->EnterDeactivated();
+		break;
+
+	case CHG_SRC_CUR_DOWN:
+		if (!currentSrc->IsPlaying() &&
+			!currentSrc->IsTransitioningFromOrToPlay())
+			this->EnterChangeSrcNewUp();
 		break;
 	}
 }
@@ -260,15 +295,14 @@ void AudioController::EnterDeactivatingSources()
 
 void AudioController::EnterDeactivated()
 {
-	RetroradioController::Instance()->GetGPIOController()->DisableSourcesLeds();
-	this->CheckStateMachine(this->state==DEACTIVATING_SOURCES, "DEACTIVED");
+	this->CheckStateMachine(this->state==DEACTIVATING_SOURCES || this->state==STARTING_UP,
+			"DEACTIVED");
 	this->SetState(DEACTIVATED);
+	this->UpdateSrcLeds();
 }
 
 void AudioController::EnterActivatingSources(bool need2ReOpenSoundDevices)
 {
-	RetroradioController::Instance()->GetGPIOController()->SetSourceLedEnabled(this->audioSources->GetCurrentSource()->GetName(), true);
-
 	if (need2ReOpenSoundDevices)
 	{
 		this->mainVolumeCtrl->DeInit();
@@ -277,6 +311,7 @@ void AudioController::EnterActivatingSources(bool need2ReOpenSoundDevices)
 
 	this->audioSources->ActivateAll(need2ReOpenSoundDevices);
 	this->SetState(ACTIVATING_SOURCES);
+	this->UpdateSrcLeds();
 
 	if (this->audioSources->AreAllActivated())
 		this->EnterStartPlaying();
@@ -329,6 +364,38 @@ void AudioController::CheckStateMachine(bool passed, const char *stateToEnter)
 AudioController::State AudioController::GetState()
 {
 	return this->state;
+}
+
+void AudioController::EnterChangeSrcCurDown()
+{
+	this->audioSources->StartChangeToSourceNext(); //schedule src change to next src
+	this->UpdateSrcLeds();
+	this->audioSources->GetCurrentSource()->GoOffline(true);
+
+	this->SetState(State::CHG_SRC_CUR_DOWN);
+
+	if (!this->audioSources->GetCurrentSource()->IsTransitioningFromOrToPlay())
+		this->EnterChangeSrcNewUp();
+}
+
+void AudioController::EnterChangeSrcNewUp()
+{
+	this->audioSources->FinishChangeToSource(); //switch to new src
+	this->audioSources->GetCurrentSource()->GoOnline();
+	this->SetState(State::CHG_SRC_NEW_UP);
+
+	if (this->audioSources->GetCurrentSource()->IsPlaying())
+		this->EnterActivated();
+}
+
+void AudioController::UpdateSrcLeds()
+{
+	if (this->state == STARTING_UP) return; //startup state is handled somewhere else
+
+	RetroradioController::Instance()->GetGPIOController()->DisableSourcesLeds();
+	if (this->state!=State::DEACTIVATED)
+		RetroradioController::Instance()->GetGPIOController()->SetSourceLedEnabled(
+				this->audioSources->GetScheduledSource()->GetName(), true);
 }
 
 } /* namespace retroradiocontroller */

@@ -39,7 +39,7 @@ private:
 
 	AbstractAudioSource *currentAudioSource;
 
-	AbstractAudioSource *previousAudioSource;
+	AbstractAudioSource *scheduledAudioSource;
 
 	AbstractAudioSource::IAudioSourceListener *srcListener;
 
@@ -63,11 +63,17 @@ public:
 
 	bool AreAllDeactivated();
 
-	void ChangeToNextSource();
+	void StartChangeToSourceNext();
+
+	bool StartChangeToSourceById(const char *srcId);
+
+	void FinishChangeToSource();
 
 	AbstractAudioSource *GetCurrentSource();
 
-	AbstractAudioSource *GetPreviousSource();
+	AbstractAudioSource *GetScheduledSource();
+
+	bool IsSourceChangeOngoing();
 
 	AbstractAudioSource *GetIterator();
 };

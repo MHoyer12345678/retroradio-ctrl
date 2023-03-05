@@ -72,6 +72,9 @@ private:
 	const char *ConfigGetMixerName();
 
 	const char *ConfigGetCardName();
+
+	void UpdateSrcLeds();
+
 public:
 	AudioController(IStateListener *stateListener, Configuration *configuration);
 
@@ -102,8 +105,6 @@ public:
 	void EnterChangeSrcCurDown();
 
 	void EnterChangeSrcNewUp();
-
-	void EnterActivated();
 
 	void ChangeToNextSource();
 
