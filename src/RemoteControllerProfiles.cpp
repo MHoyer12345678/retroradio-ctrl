@@ -5,7 +5,7 @@
  *      Author: joe
  */
 
-#include "RemoteController.h"
+#include "RemoteControllerProfiles.h"
 
 #include <sys/types.h>
 #include <sys/sysmacros.h>

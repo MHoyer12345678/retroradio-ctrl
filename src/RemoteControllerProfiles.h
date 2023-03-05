@@ -12,8 +12,6 @@
 #include <linux/lirc.h>
 #include <map>
 
-using namespace CppAppUtils;
-
 #define _SCAN_CODE_NOT_SET	0xFFFF
 
 #define SMALL_NEC_REMOTE_PROFILE_ID							"SmallNECRemoteProfile"
